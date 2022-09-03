@@ -1,19 +1,15 @@
-//parse json web request
-
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"bytes"
 	"strings"
-
 )
-
 
 type json_data []struct {
 	IssuerCaID     int    `json:"issuer_ca_id"`
@@ -27,43 +23,36 @@ type json_data []struct {
 	SerialNumber   string `json:"serial_number"`
 }
 
-
-
-
 func removeDuplicateStr(strSlice []string) []string {
-    allKeys := make(map[string]bool)
-    list := []string{}
-    for _, item := range strSlice {
-        if _, value := allKeys[item]; !value {
-            allKeys[item] = true
-            list = append(list, item)
-        }
-    }
-    return list
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
 }
 
-
-
 const (
-    empty = ""
-    tab   = "\t"
+	empty = ""
+	tab   = "\t"
 )
 
 func PrettyJson(data interface{}) (string, error) {
-    buffer := new(bytes.Buffer)
-    encoder := json.NewEncoder(buffer)
-    encoder.SetIndent(empty, tab)
+	buffer := new(bytes.Buffer)
+	encoder := json.NewEncoder(buffer)
+	encoder.SetIndent(empty, tab)
 
-    err := encoder.Encode(data)
-    if err != nil {
-       return empty, err
-    }
-    return buffer.String(), nil
+	err := encoder.Encode(data)
+	if err != nil {
+		return empty, err
+	}
+	return buffer.String(), nil
 }
 
-
-
-func ippp(taregt string){
+func ippp(taregt string) {
 	url := fmt.Sprintf("https://crt.sh/?q=%s&output=json", os.Args[1])
 	resp, err := http.Get(url)
 	if err != nil {
@@ -77,24 +66,24 @@ func ippp(taregt string){
 	//fmt.Println(strings.TrimSpace(string(body)))
 
 	var result json_data
-	if err := json.Unmarshal(body, &result); err != nil {  // Parse []byte to the go struct pointer
-        fmt.Println("Can not unmarshal JSON")
-}
+	if err := json.Unmarshal(body, &result); err != nil { 
+		fmt.Println("Can not unmarshal JSON")
+	}
 	var subs []string
 	json.Unmarshal(body, &result)
 	//fmt.Println(result[0].CommonName)
 
 	for index := range result {
 		sub := (result[index].CommonName)
-		subs = append(subs , sub)
+		subs = append(subs, sub)
 	}
 	final_res := removeDuplicateStr(subs)
-	
+
 	for all := range final_res {
-		if strings.Contains(final_res[all], "*"){
+		if strings.Contains(final_res[all], "*") {
 			continue
 		}
-		fmt.Println("Found subdomain -> : " , final_res[all])
+		fmt.Println("Found subdomain -> : ", final_res[all])
 	}
 
 }
@@ -103,5 +92,3 @@ func main() {
 	ippp(os.Args[1])
 
 }
-
-
