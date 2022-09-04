@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/fatih/color"
 )
 
 type json_data []struct {
@@ -21,6 +23,12 @@ type json_data []struct {
 	NotBefore      string `json:"not_before"`
 	NotAfter       string `json:"not_after"`
 	SerialNumber   string `json:"serial_number"`
+}
+
+func is_alive(s string) bool {
+	url := fmt.Sprintf("https://%s", s)
+	r, e := http.Head(url)
+	return e == nil && r.StatusCode == 200
 }
 
 func removeDuplicateStr(strSlice []string) []string {
@@ -66,7 +74,7 @@ func ippp(taregt string) {
 	//fmt.Println(strings.TrimSpace(string(body)))
 
 	var result json_data
-	if err := json.Unmarshal(body, &result); err != nil { 
+	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
 		fmt.Println("Can not unmarshal JSON")
 	}
 	var subs []string
@@ -83,7 +91,11 @@ func ippp(taregt string) {
 		if strings.Contains(final_res[all], "*") {
 			continue
 		}
-		fmt.Println("Found subdomain -> : ", final_res[all])
+		if is_alive(final_res[all]) {
+			fmt.Printf(color.RedString("Host is Alive: %v\n"), color.GreenString(final_res[all]))
+
+		}
+
 	}
 
 }
