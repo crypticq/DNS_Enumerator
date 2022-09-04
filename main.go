@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 )
@@ -61,6 +61,10 @@ func PrettyJson(data interface{}) (string, error) {
 }
 
 func ippp(taregt string) {
+	var wg sync.WaitGroup
+
+	var alive_domains []string
+
 	url := fmt.Sprintf("https://crt.sh/?q=%s&output=json", os.Args[1])
 	resp, err := http.Get(url)
 	if err != nil {
@@ -71,7 +75,6 @@ func ippp(taregt string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//fmt.Println(strings.TrimSpace(string(body)))
 
 	var result json_data
 	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
@@ -79,22 +82,28 @@ func ippp(taregt string) {
 	}
 	var subs []string
 	json.Unmarshal(body, &result)
-	//fmt.Println(result[0].CommonName)
 
 	for index := range result {
 		sub := (result[index].CommonName)
 		subs = append(subs, sub)
 	}
-	final_res := removeDuplicateStr(subs)
+	fmt.Printf(color.RedString("Found total of %d subdomains\n", len(subs)))
+	fmt.Println(color.GreenString("Filtering out the dead ones"))
+	dom := removeDuplicateStr(subs)
+	for _, domain := range dom {
+		wg.Add(1)
+		go func(domain string) {
+			defer wg.Done()
+			if is_alive(domain) {
+				alive_domains = append(alive_domains, domain)
+			}
+		}(domain)
+	}
 
-	for all := range final_res {
-		if strings.Contains(final_res[all], "*") {
-			continue
-		}
-		if is_alive(final_res[all]) {
-			fmt.Printf(color.RedString("Host is Alive: %v\n"), color.GreenString(final_res[all]))
-
-		}
+	wg.Wait()
+	fmt.Printf(color.RedString("alive subdomains:%d\n", len(alive_domains)))
+	for index, domain := range alive_domains {
+		fmt.Printf(color.GreenString("%d: %s\n", index, domain))
 
 	}
 
