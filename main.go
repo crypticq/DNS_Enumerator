@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/fatih/color"
@@ -94,7 +95,7 @@ func ippp(taregt string) {
 		wg.Add(1)
 		go func(domain string) {
 			defer wg.Done()
-			if is_alive(domain) {
+			if is_alive(domain) && strings.Contains(domain, os.Args[1]) {
 				alive_domains = append(alive_domains, domain)
 			}
 		}(domain)
