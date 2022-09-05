@@ -134,7 +134,7 @@ func ippp(taregt string) {
 		fmt.Println(color.GreenString(domain))
 	}
 
-	// write slice to a file and save it
+
 	file, err := json.MarshalIndent(alive_domains, "", " ")
 	if err != nil {
 		fmt.Println(err)
