@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -24,6 +25,23 @@ type json_data []struct {
 	NotBefore      string `json:"not_before"`
 	NotAfter       string `json:"not_after"`
 	SerialNumber   string `json:"serial_number"`
+}
+
+func genrate_domainPattern(domain string) []string { // -> for brute force subdomains , it read a file and generate a list of subdomains
+
+	var domainPattern []string
+	file, err := os.Open(os.Args[2])
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		domainPattern = append(domainPattern, scanner.Text())
+	}
+	return domainPattern
+
 }
 
 func is_alive(s string) bool {
@@ -63,8 +81,8 @@ func PrettyJson(data interface{}) (string, error) {
 
 func ippp(taregt string) {
 	var wg sync.WaitGroup
-
 	var alive_domains []string
+	var all_subs []string
 
 	url := fmt.Sprintf("https://crt.sh/?q=%s&output=json", os.Args[1])
 	resp, err := http.Get(url)
@@ -81,36 +99,72 @@ func ippp(taregt string) {
 	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
 		fmt.Println("Can not unmarshal JSON")
 	}
-	var subs []string
+
 	json.Unmarshal(body, &result)
 
 	for index := range result {
 		sub := (result[index].CommonName)
-		subs = append(subs, sub)
+		all_subs = append(all_subs, sub)
 	}
-	fmt.Printf(color.RedString("Found total of %d subdomains\n", len(subs)))
-	fmt.Println(color.GreenString("Filtering out the dead ones"))
-	dom := removeDuplicateStr(subs)
+
+	domainPattern := genrate_domainPattern(os.Args[1])
+	for _, subdomain := range domainPattern {
+
+		url := fmt.Sprintf("http://%s.%s", subdomain, os.Args[1])
+		all_subs = append(all_subs, url)
+	}
+
+	dom := removeDuplicateStr(all_subs)
+
 	for _, domain := range dom {
 		wg.Add(1)
 		go func(domain string) {
 			defer wg.Done()
 			if is_alive(domain) && strings.Contains(domain, os.Args[1]) {
 				alive_domains = append(alive_domains, domain)
+
 			}
 		}(domain)
 	}
 
 	wg.Wait()
-	fmt.Printf(color.RedString("alive subdomains:%d\n", len(alive_domains)))
-	for index, domain := range alive_domains {
-		fmt.Printf(color.GreenString("%d: %s\n", index, domain))
 
+	fmt.Printf(color.RedString("Found total of %d subdomains\n", len(alive_domains)))
+	for _, domain := range alive_domains {
+		fmt.Println(color.GreenString(domain))
 	}
+
+	// write slice to a file and save it
+	file, err := json.MarshalIndent(alive_domains, "", " ")
+	if err != nil {
+		fmt.Println(err)
+	}
+	_ = ioutil.WriteFile("subdomains.json", file, 0644)
+	fmt.Printf(color.YellowString("All result saved to %s\n", "subdomains.json"))
 
 }
 
+func banner() {
+	const banner = `
+
+	_____       __    ______                    
+	/ ___/__  __/ /_  / ____/___  __  ______ ___ 
+	\__ \/ / / / __ \/ __/ / __ \/ / / / __ __ \
+   ___/ / /_/ / /_/ / /___/ / / / /_/ / / / / / /
+  /____/\__,_/_.___/_____/_/ /_/\__,_/_/ /_/ /_/ 
+												 
+  `
+	fmt.Println(color.RedString(banner))
+	fmt.Printf(color.BlueString("colelct subdomains from crt.sh and brute force subdomains for %s\n", os.Args[1]))
+	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @yazeed_alzahrani\n snapchat: @jp-q \n github:crypticq\n"))
+
+}
 func main() {
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: ./subdomain <domain> <wordlist>")
+		os.Exit(0)
+	}
+	banner()
 	ippp(os.Args[1])
 
 }
