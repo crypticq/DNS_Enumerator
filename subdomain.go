@@ -44,7 +44,7 @@ func genrate_domainPattern(domain string) []string { // -> for brute force subdo
 
 }
 
-func is_alive(s string) bool {
+func is_alive(s string) bool { // -> for checking alive domains
 	url := fmt.Sprintf("https://%s", s)
 	r, e := http.Head(url)
 	return e == nil && r.StatusCode == 200
@@ -79,6 +79,8 @@ func PrettyJson(data interface{}) (string, error) {
 	return buffer.String(), nil
 }
 
+
+
 func ippp(taregt string) {
 	var wg sync.WaitGroup
 	var alive_domains []string
@@ -108,10 +110,14 @@ func ippp(taregt string) {
 	}
 
 	domainPattern := genrate_domainPattern(os.Args[1])
-	for _, subdomain := range domainPattern {
 
-		url := fmt.Sprintf("%s.%s", subdomain, os.Args[1])
-		all_subs = append(all_subs, url)
+	for _, subdomain := range domainPattern {
+		if strings.Contains(subdomain, "www") {
+			continue
+		}
+
+		subdomains := fmt.Sprintf("%s.%s", subdomain, os.Args[1])
+		all_subs = append(all_subs, subdomains)
 	}
 
 	dom := removeDuplicateStr(all_subs)
@@ -134,7 +140,6 @@ func ippp(taregt string) {
 		fmt.Println(color.GreenString(domain))
 	}
 
-
 	file, err := json.MarshalIndent(alive_domains, "", " ")
 	if err != nil {
 		fmt.Println(err)
@@ -156,7 +161,7 @@ func banner() {
   `
 	fmt.Println(color.RedString(banner))
 	fmt.Printf(color.BlueString("colelct subdomains from crt.sh and brute force subdomains for %s\n", os.Args[1]))
-	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @commplicated\n snapchat: @jp-q \n github:crypticq\n"))
+	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @yazeed_alzahrani\n snapchat: @jp-q \n github:crypticq\n"))
 
 }
 func main() {
