@@ -110,7 +110,7 @@ func ippp(taregt string) {
 	domainPattern := genrate_domainPattern(os.Args[1])
 	for _, subdomain := range domainPattern {
 
-		url := fmt.Sprintf("http://%s.%s", subdomain, os.Args[1])
+		url := fmt.Sprintf("%s.%s", subdomain, os.Args[1])
 		all_subs = append(all_subs, url)
 	}
 
