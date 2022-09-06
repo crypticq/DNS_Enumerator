@@ -161,7 +161,7 @@ func banner() {
   `
 	fmt.Println(color.RedString(banner))
 	fmt.Printf(color.BlueString("colelct subdomains from crt.sh and brute force subdomains for %s\n", os.Args[1]))
-	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @yazeed_alzahrani\n snapchat: @jp-q \n github:crypticq\n"))
+	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @commplicated\n snapchat: @jp-q \n github:crypticq\n"))
 
 }
 func main() {
