@@ -5,6 +5,8 @@
 git clone https://github.com/crypticq/DNS_Enumerator
 cd DNS_Enumerator
 go build subdomain.go 
+go get github.com/fatih/color
+
 ```
 
 
