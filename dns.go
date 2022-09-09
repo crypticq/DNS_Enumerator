@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+	"github.com/PuerkitoBio/goquery"
 	"github.com/fatih/color"
 )
 
@@ -27,6 +27,36 @@ type json_data []struct {
 	NotBefore      string `json:"not_before"`
 	NotAfter       string `json:"not_after"`
 	SerialNumber   string `json:"serial_number"`
+}
+
+type threat_data struct {
+	ResponseCode string `json:"response_code"`
+	Resolutions  []struct {
+		LastResolved string `json:"last_resolved"`
+		IPAddress    string `json:"ip_address"`
+	} `json:"resolutions"`
+	Hashes     []interface{} `json:"hashes"`
+	Emails     []string      `json:"emails"`
+	Subdomains []string      `json:"subdomains"`
+	References []string      `json:"references"`
+	Votes      int           `json:"votes"`
+	Permalink  string        `json:"permalink"`
+}
+
+type AlienVault struct {
+	PassiveDNS []struct {
+		Address       string `json:"address"`
+		First         string `json:"first"`
+		Last          string `json:"last"`
+		Hostname      string `json:"hostname"`
+		RecordType    string `json:"record_type"`
+		IndicatorLink string `json:"indicator_link"`
+		FlagURL       string `json:"flag_url"`
+		FlagTitle     string `json:"flag_title"`
+		AssetType     string `json:"asset_type"`
+		Asn           string `json:"asn"`
+	} `json:"passive_dns"`
+	Count int `json:"count"`
 }
 
 func genrate_domainPattern(domain string) []string { // -> for brute force subdomains , it read a file and generate a list of subdomains
@@ -79,6 +109,149 @@ func hackertarget(s string) []string {
 
 	}
 	return domain
+}
+
+func threatcrowd(s string) []string {
+	// Make HTTP GET request With headers
+	var domain []string
+	url := fmt.Sprintf("https://www.threatcrowd.org/searchApi/v2/domain/report/?domain=%s", s)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	// Read response
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// res := (string(body))
+
+	var data threat_data
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	subdomains := data.Subdomains
+	for _, subdomain := range subdomains {
+		domain = append(domain, subdomain)
+
+	}
+	return domain
+
+}
+
+func anubis(s string) []string {
+
+	var temp []string
+	var subdomains []string
+	url := fmt.Sprintf("https://jldc.me/anubis/subdomains/%s", s)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	res := (string(body))
+	temp = append(temp, res)
+	for _, subdomain := range temp {
+		subdomains = append(subdomains, subdomain)
+
+	}
+	return subdomains
+
+}
+
+func omsint(s string) []string {
+
+	var temp []string
+	var subdomains []string
+	url := fmt.Sprintf("https://sonar.omnisint.io/all/%s", s)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	res := (string(body))
+	temp = append(temp, res)
+	for _, subdomain := range temp {
+		subdomains = append(subdomains, subdomain)
+
+	}
+	return subdomains
+
+}
+
+func alienvault(s string) []string {
+	res, err := http.Get(fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/passive_dns", s))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var data AlienVault
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var subdomains []string
+	for _, subdomain := range data.PassiveDNS {
+		subdomains = append(subdomains, subdomain.Hostname)
+	}
+	return subdomains
+
+}
+
+func rapidDNS(target string) []string {
+	var subdomains []string
+	url := fmt.Sprintf("https://rapiddns.io/subdomain/%s#result", target)
+	doc, err := goquery.NewDocument(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	doc.Find("td").Each(func(i int, s *goquery.Selection) {
+		tables := s.Text()
+		clean := strings.TrimSpace(tables)
+
+		if strings.Contains(tables, target) {
+			subdomains = append(subdomains, clean)
+		}
+	})
+	return subdomains
 }
 
 func removeDuplicateStr(strSlice []string) []string {
@@ -141,6 +314,23 @@ func ippp(taregt string) {
 	for _, sub := range hackertarget_subs {
 		all_subs = append(all_subs, sub)
 	}
+	threatcrowd_subs := threatcrowd(os.Args[1])
+	for _, sub := range threatcrowd_subs {
+		all_subs = append(all_subs, sub)
+	}
+	anubis_subs := anubis(os.Args[1])
+	for _, sub := range anubis_subs {
+		all_subs = append(all_subs, sub)
+	}
+	omnisint_subs := omsint(os.Args[1])
+	for _, sub := range omnisint_subs {
+		all_subs = append(all_subs, sub)
+	}
+	alienvault_subs := alienvault(os.Args[1])
+	for _, sub := range alienvault_subs {
+		all_subs = append(all_subs, sub)
+	}
+
 	domainPattern := genrate_domainPattern(os.Args[1])
 
 	for _, subdomain := range domainPattern {
@@ -192,7 +382,7 @@ func banner() {
 												 
   `
 	fmt.Println(color.RedString(banner))
-	fmt.Printf(color.BlueString("colelct subdomains from crt.sh and brute force subdomains for %s\n", os.Args[1]))
+	fmt.Printf(color.BlueString("Gathring subdomains for %s\n", os.Args[1]))
 	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @commplicated\n snapchat: @jp-q \n github:crypticq\n"))
 
 }
