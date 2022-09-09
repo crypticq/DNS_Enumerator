@@ -6,6 +6,7 @@ git clone https://github.com/crypticq/DNS_Enumerator
 cd DNS_Enumerator
 go env -w GO111MODULE=off
 go get github.com/fatih/color
+go get github.com/PuerkitoBio/goquery
 go build subdomain.go 
 ```
 
