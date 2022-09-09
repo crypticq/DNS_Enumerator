@@ -4,7 +4,8 @@
 ```bash
 git clone https://github.com/crypticq/DNS_Enumerator
 cd DNS_Enumerator
-go install github.com/fatih/color@latest
+go env -w GO111MODULE=off
+go get github.com/fatih/color
 go build subdomain.go 
 ```
 
