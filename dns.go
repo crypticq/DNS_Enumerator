@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -45,9 +46,39 @@ func genrate_domainPattern(domain string) []string { // -> for brute force subdo
 
 }
 
-func is_alive(s string) bool {
-	r, e := net.LookupIP(s)
-	return e == nil && len(r) > 0
+//make is_alive chanel
+
+func is_alive(s string, ch chan bool) bool {
+
+	_, e := net.LookupIP(s)
+	if e != nil {
+		ch <- false
+		return false
+	}
+	ch <- true
+	return true
+}
+
+func hackertarget(s string) []string {
+	var domain []string
+	url := fmt.Sprintf("https://api.hackertarget.com/hostsearch/?q=%s", s)
+	res, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	scanner := bufio.NewScanner(res.Body)
+	for scanner.Scan() {
+		record := scanner.Text()
+		if record != "" {
+			res := strings.Split(record, ",")[0]
+			domain = append(domain, res)
+		}
+
+	}
+	return domain
 }
 
 func removeDuplicateStr(strSlice []string) []string {
@@ -106,7 +137,10 @@ func ippp(taregt string) {
 		sub := (result[index].CommonName)
 		all_subs = append(all_subs, sub)
 	}
-
+	hackertarget_subs := hackertarget(os.Args[1])
+	for _, sub := range hackertarget_subs {
+		all_subs = append(all_subs, sub)
+	}
 	domainPattern := genrate_domainPattern(os.Args[1])
 
 	for _, subdomain := range domainPattern {
@@ -119,18 +153,18 @@ func ippp(taregt string) {
 	}
 
 	dom := removeDuplicateStr(all_subs)
-
-	for _, domain := range dom {
+	// use is_alive with WaitGroup
+	for _, sub := range dom {
 		wg.Add(1)
-		go func(domain string) {
+		go func(sub string) {
 			defer wg.Done()
-			if is_alive(domain) && strings.Contains(domain, os.Args[1]) {
-				alive_domains = append(alive_domains, domain)
-
+			ch := make(chan bool)
+			go is_alive(sub, ch)
+			if <-ch {
+				alive_domains = append(alive_domains, sub)
 			}
-		}(domain)
+		}(sub)
 	}
-
 	wg.Wait()
 
 	fmt.Printf(color.RedString("Found total of %d subdomains\n", len(alive_domains)))
@@ -159,7 +193,7 @@ func banner() {
   `
 	fmt.Println(color.RedString(banner))
 	fmt.Printf(color.BlueString("colelct subdomains from crt.sh and brute force subdomains for %s\n", os.Args[1]))
-	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @commolicated\n snapchat: @jp-q \n github:crypticq\n"))
+	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @commplicated\n snapchat: @jp-q \n github:crypticq\n"))
 
 }
 func main() {
@@ -167,7 +201,10 @@ func main() {
 		fmt.Println("Usage: ./subdomain <domain> <wordlist>")
 		os.Exit(0)
 	}
+	start := time.Now()
 	banner()
 	ippp(os.Args[1])
+	elapsed := time.Since(start)
+	fmt.Printf(color.YellowString("Time taken: %s", elapsed))
 
 }
