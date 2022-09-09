@@ -76,7 +76,7 @@ func genrate_domainPattern(domain string) []string { // -> for brute force subdo
 
 }
 
-//make is_alive chanel
+
 
 func is_alive(s string, ch chan bool) bool {
 
@@ -112,7 +112,7 @@ func hackertarget(s string) []string {
 }
 
 func threatcrowd(s string) []string {
-	// Make HTTP GET request With headers
+	
 	var domain []string
 	url := fmt.Sprintf("https://www.threatcrowd.org/searchApi/v2/domain/report/?domain=%s", s)
 	req, err := http.NewRequest("GET", url, nil)
@@ -128,12 +128,12 @@ func threatcrowd(s string) []string {
 	}
 	defer resp.Body.Close()
 
-	// Read response
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// res := (string(body))
+	
 
 	var data threat_data
 	err = json.Unmarshal(body, &data)
