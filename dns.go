@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fatih/color"
 )
@@ -76,7 +77,7 @@ func genrate_domainPattern(domain string) []string { // -> for brute force subdo
 
 }
 
-
+//make is_alive chanel
 
 func is_alive(s string, ch chan bool) bool {
 
@@ -112,7 +113,7 @@ func hackertarget(s string) []string {
 }
 
 func threatcrowd(s string) []string {
-	
+	// Make HTTP GET request With headers
 	var domain []string
 	url := fmt.Sprintf("https://www.threatcrowd.org/searchApi/v2/domain/report/?domain=%s", s)
 	req, err := http.NewRequest("GET", url, nil)
@@ -128,12 +129,12 @@ func threatcrowd(s string) []string {
 	}
 	defer resp.Body.Close()
 
-
+	// Read response
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+	// res := (string(body))
 
 	var data threat_data
 	err = json.Unmarshal(body, &data)
@@ -151,7 +152,6 @@ func threatcrowd(s string) []string {
 
 func anubis(s string) []string {
 
-	var temp []string
 	var subdomains []string
 	url := fmt.Sprintf("https://jldc.me/anubis/subdomains/%s", s)
 	req, err := http.NewRequest("GET", url, nil)
@@ -171,21 +171,21 @@ func anubis(s string) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	res := (string(body))
-	temp = append(temp, res)
-	for _, subdomain := range temp {
-		subdomains = append(subdomains, subdomain)
-
+	var hosts []string
+	if err := json.Unmarshal(body, &hosts); err != nil { // Parse []byte to the go struct pointer
+		fmt.Println("Can not unmarshal JSON")
 	}
+	for _, host := range hosts {
+		subdomains = append(subdomains, host)
+	}
+
 	return subdomains
 
 }
 
-func omsint(s string) []string {
-
-	var temp []string
+func sonar(s string) []string {
 	var subdomains []string
-	url := fmt.Sprintf("https://sonar.omnisint.io/all/%s", s)
+	url := fmt.Sprintf("https://sonar.omnisint.io/subdomains/%s", s)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -203,14 +203,16 @@ func omsint(s string) []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	res := (string(body))
-	temp = append(temp, res)
-	for _, subdomain := range temp {
-		subdomains = append(subdomains, subdomain)
 
+	var hosts []string
+	if err := json.Unmarshal(body, &hosts); err != nil { // Parse []byte to the go struct pointer
+		fmt.Println("Can not unmarshal JSON")
 	}
-	return subdomains
+	for _, host := range hosts {
+		subdomains = append(subdomains, host)
+	}
 
+	return subdomains
 }
 
 func alienvault(s string) []string {
@@ -322,7 +324,7 @@ func ippp(taregt string) {
 	for _, sub := range anubis_subs {
 		all_subs = append(all_subs, sub)
 	}
-	omnisint_subs := omsint(os.Args[1])
+	omnisint_subs := sonar(os.Args[1])
 	for _, sub := range omnisint_subs {
 		all_subs = append(all_subs, sub)
 	}
