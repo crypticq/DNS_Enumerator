@@ -9,7 +9,7 @@ go build dns.go
 
 
 ```bash
-Usage: ./subdomain <domain> <wordlist>
+Usage: ./dns <domain> <wordlist>
 ```
 
 
