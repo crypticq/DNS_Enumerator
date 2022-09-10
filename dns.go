@@ -486,7 +486,7 @@ func banner() {
 }
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Println("Usage: ./subdomain <domain> <wordlist>")
+		fmt.Println("Usage: ./dns <domain> <wordlist>")
 		os.Exit(0)
 	}
 	start := time.Now()
