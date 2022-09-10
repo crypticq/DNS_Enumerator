@@ -95,7 +95,7 @@ func genrate_domainPattern(domain string) []string { // -> for brute force subdo
 
 }
 
-//make is_alive chanel
+
 
 func is_alive(s string, ch chan bool) bool {
 
