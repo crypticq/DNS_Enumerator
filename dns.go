@@ -153,6 +153,7 @@ func threatcrowd(s string) []string {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
+		return domain
 	}
 
 	var data threat_data
