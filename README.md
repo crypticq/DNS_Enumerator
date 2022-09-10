@@ -13,4 +13,4 @@ Usage: ./dns <domain> <wordlist>
 ```
 
 
-for better result compile dns.go and run it
+You can compile and try both (dns.go or dns2.go)
