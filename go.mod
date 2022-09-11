@@ -4,6 +4,8 @@ go 1.19
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/enescakir/emoji v1.0.0
+	github.com/evilsocket/brutemachine v0.0.0-20170703145059-0331ad6a82ce
 	github.com/fatih/color v1.13.0
 )
 
