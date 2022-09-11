@@ -342,7 +342,7 @@ func run() []string {
 			defer wg.Done()
 			if is_alive(subdomain) {
 				mutex.Lock()
-				// dont append if subdomain already exists
+				
 				dns = append(dns, subdomain)
 				mutex.Unlock()
 			}
