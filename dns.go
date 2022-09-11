@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
 )
 
@@ -98,6 +99,29 @@ type threatminer struct {
 	Results       []string `json:"results"`
 }
 
+func send_request(url string) []byte {
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0")
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return body
+}
+
 func hackertarget(s string) string {
 	url := fmt.Sprintf("https://api.hackertarget.com/hostsearch/?q=%s", s)
 	res, err := http.Get(url)
@@ -122,94 +146,42 @@ func hackertarget(s string) string {
 func threatcrowd(s string) string {
 
 	url := fmt.Sprintf("https://www.threatcrowd.org/searchApi/v2/domain/report/?domain=%s", s)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-
-	}
-
-	var data threat_data
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		log.Fatal(err)
+	body := send_request(url)
+	var data threat_data                                // -> struct for threatcrowd
+	if err := json.Unmarshal(body, &data); err != nil { // Parse []byte to the go struct pointer
+		fmt.Println("Can not unmarshal JSON")
 		return "Error , threatcrowd"
-	}
-	subdomains := data.Subdomains
-	for _, subdomain := range subdomains {
-		all_domain = append(all_domain, subdomain)
+
+		subdomains := data.Subdomains
+		for _, subdomain := range subdomains {
+			all_domain = append(all_domain, subdomain)
+		}
 
 	}
 	return "Success , threatcrowd"
-
 }
 
 func anubis(s string) string {
 
 	url := fmt.Sprintf("https://jldc.me/anubis/subdomains/%s", s)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	body := send_request(url)
 	var hosts []string
 	if err := json.Unmarshal(body, &hosts); err != nil { // Parse []byte to the go struct pointer
 		fmt.Println("Can not unmarshal JSON")
 		return "Error , anubis"
-	}
-	for _, host := range hosts {
-		all_domain = append(all_domain, host)
+		for _, host := range hosts {
+
+			all_domain = append(all_domain, host)
+		}
+
 	}
 	return "Success , anubis"
-
 }
 
 func sonar(s string) string {
 
 	url := fmt.Sprintf("https://sonar.omnisint.io/subdomains/%s", s)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101 Firefox/78.0")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	body := send_request(url)
 
 	var hosts []string
 	if err := json.Unmarshal(body, &hosts); err != nil { // Parse []byte to the go struct pointer
@@ -224,28 +196,18 @@ func sonar(s string) string {
 
 func alienvault(s string) string {
 
-	res, err := http.Get(fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/passive_dns", s))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	url := fmt.Sprintf("https://otx.alienvault.com/api/v1/indicators/domain/%s/passive_dns", s)
+	body := send_request(url)
+
 	var data AlienVault
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		log.Fatal(err)
-		return "Error , ALIENVAULT"
+	if err := json.Unmarshal(body, &data); err != nil { // Parse []byte to the go struct pointer
+		fmt.Println("Can not unmarshal JSON")
+		return "Error , alienvault"
 	}
-
-	for _, subdomain := range data.PassiveDNS {
-		all_domain = append(all_domain, subdomain.Hostname)
+	for _, host := range data.PassiveDNS {
+		all_domain = append(all_domain, host.Hostname)
 	}
-
 	return "Success , alienvault"
-
 }
 
 func rapidDNS(target string) string {
@@ -270,54 +232,36 @@ func rapidDNS(target string) string {
 func ThreatMiner(s string) string {
 
 	url := fmt.Sprintf("https://api.threatminer.org/v2/domain.php?q=%s&rt=5", s)
-	res, err := http.Get(url)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	body := send_request(url)
 	var data threatminer
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		log.Fatal(err)
+	if err := json.Unmarshal(body, &data); err != nil { // Parse []byte to the go struct pointer
+		fmt.Println("Can not unmarshal JSON")
 		return "Error , ThreatMiner"
 	}
+
 	for _, subdomain := range data.Results {
 		all_domain = append(all_domain, subdomain)
 	}
 
 	return "Success , ThreatMiner"
-
 }
+
 func UrlScan(s string) string {
 
 	url := fmt.Sprintf("https://urlscan.io/api/v1/search/?q=domain:%s", s)
-	res, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	body := send_request(url)
 	var hosts URLSCAN
-	err = json.Unmarshal(body, &hosts)
-	if err != nil {
-		log.Fatal(err)
+	if err := json.Unmarshal(body, &hosts); err != nil { // Parse []byte to the go struct pointer
+		fmt.Println("Can not unmarshal JSON")
 		return "Error , UrlScan"
-	}
-	for i, _ := range hosts.Results {
-		if strings.Contains(hosts.Results[i].Task.URL, s) {
-			all_domain = append(all_domain, hosts.Results[i].Task.URL)
+		for i, _ := range hosts.Results {
+			if strings.Contains(hosts.Results[i].Task.URL, s) {
+				all_domain = append(all_domain, hosts.Results[i].Task.URL)
+			}
 		}
+
 	}
 	return "Success , UrlScan"
-
 }
 
 func removeDuplicateStr(strSlice []string) []string {
@@ -335,16 +279,7 @@ func removeDuplicateStr(strSlice []string) []string {
 func crt(host string) string {
 
 	url := fmt.Sprintf("https://crt.sh/?q=%%25.%s&output=json", host)
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	body := send_request(url)
 	var result json_data
 	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
 		log.Fatal(err)
@@ -407,6 +342,7 @@ func run() []string {
 			defer wg.Done()
 			if is_alive(subdomain) {
 				mutex.Lock()
+				// dont append if subdomain already exists
 				dns = append(dns, subdomain)
 				mutex.Unlock()
 			}
@@ -442,7 +378,8 @@ func banner() {
   `
 	fmt.Println(color.RedString(banner))
 	fmt.Printf(color.BlueString("Gathring subdomains for %s\n", os.Args[1]))
-	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @commplicated\n snapchat: @jp-q \n github:crypticq\n"))
+
+	fmt.Printf(color.YellowString("Coded by Eng Yazeed Alzahrani\n instagram: @commplicated\n snapchat: @jp-q \n github:crypticq\n Grtz to https://shieldit.sa %s\n ", emoji.WavingHand))
 
 }
 
