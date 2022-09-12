@@ -351,6 +351,7 @@ func run() []string {
 		wp.Do(func() error {
 
 			if is_alive(url) {
+				fmt.Println(color.BlueString("Alive -> %s", url))
 				dns = append(dns, url)
 			}
 
