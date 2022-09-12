@@ -306,6 +306,7 @@ func passive_dns(taregt string) []string {
 	sonar(os.Args[1])
 
 	alienvault(os.Args[1])
+	crt(os.Args[1])
 
 	ThreatMiner(os.Args[1])
 
