@@ -9,13 +9,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
+	"github.com/xxjwxc/gowp/workpool"
 )
 
 var all_domain []string // -> store all results for later filteration from duplicates
@@ -334,22 +335,30 @@ func is_alive(s string) bool {
 
 func run() []string {
 	var dns []string
-	var wg sync.WaitGroup
-	var mutex = &sync.Mutex{}
 
-	for _, subdomain := range passive_dns(os.Args[1]) {
-		wg.Add(1)
-		go func(subdomain string) {
-			defer wg.Done()
-			if is_alive(subdomain) {
-				mutex.Lock()
-				
-				dns = append(dns, subdomain)
-				mutex.Unlock()
-			}
-		}(subdomain)
+	consumer := os.Args[3]
+	// convert string to int
+	intVar, err := strconv.Atoi(consumer)
+	if err != nil {
+		log.Fatal(err)
 	}
-	wg.Wait()
+
+	wp := workpool.New(intVar)
+	urlAll := passive_dns(os.Args[1])
+	for i := 0; i < len(urlAll); i++ {
+
+		url := urlAll[i]
+		wp.Do(func() error {
+
+			if is_alive(url) {
+				dns = append(dns, url)
+			}
+
+			return nil
+		})
+	}
+	wp.Wait()
+
 	for _, domain := range dns {
 
 		fmt.Println(color.GreenString(domain))
@@ -385,8 +394,9 @@ func banner() {
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: ./dns <domain> <wordlist>")
+
+	if len(os.Args) != 4 {
+		fmt.Println("Usage: ./dns <domain> <wordlist> <threading int> ")
 		os.Exit(1)
 	}
 	start := time.Now()
