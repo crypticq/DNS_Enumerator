@@ -9,5 +9,10 @@ go build dns.go
 
 
 ```bash
-Usage: ./dns <domain> <wordlist>
+Usage: ./dns <domain> <wordlist> <threading num>
+```
+
+# example
+```bash
+./dns hackerone.com subdomains-top1million-5000.txt 40
 ```
