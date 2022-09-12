@@ -11,7 +11,7 @@ go build dns.go
 ```bash
 Usage: ./dns <domain> <wordlist>
 ```
-#run it in docker
+##run it in docker
 
 ```bash
 docker build -t dns.
