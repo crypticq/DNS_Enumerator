@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -283,7 +284,7 @@ func crt(host string) string {
 	body := send_request(url)
 	var result json_data
 	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to the go struct pointer
-		log.Fatal(err)
+
 		return "Error , crt.sh"
 	}
 
@@ -298,28 +299,77 @@ func crt(host string) string {
 }
 
 func passive_dns(taregt string) []string {
-	hackertarget(os.Args[1])
+	var wg sync.WaitGroup
+	var mutex = &sync.Mutex{}
 
-	threatcrowd(os.Args[1])
+	wg.Add(10)
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, crt(taregt))
+		mutex.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, ThreatMiner(taregt))
+		mutex.Unlock()
+	}()
 
-	anubis(os.Args[1])
-
-	sonar(os.Args[1])
-
-	alienvault(os.Args[1])
-	crt(os.Args[1])
-
-	ThreatMiner(os.Args[1])
-
-	UrlScan(os.Args[1])
-	f := read_file(os.Args[2])
-	for _, subdomain := range f {
-		su := fmt.Sprintf("%s.%s", subdomain, os.Args[1])
-		all_domain = append(all_domain, su)
-	}
-
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, UrlScan(taregt))
+		mutex.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, rapidDNS(taregt))
+		mutex.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, alienvault(taregt))
+		mutex.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, sonar(taregt))
+		mutex.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, hackertarget(taregt))
+		mutex.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, threatcrowd(taregt))
+		mutex.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		all_domain = append(all_domain, anubis(taregt))
+		mutex.Unlock()
+	}()
+	go func() {
+		defer wg.Done()
+		mutex.Lock()
+		f := read_file(os.Args[2])
+		for _, sub := range f {
+			subs := fmt.Sprintf("%s.%s", sub, taregt)
+			all_domain = append(all_domain, subs)
+		}
+		mutex.Unlock()
+	}()
+	wg.Wait()
 	return removeDuplicateStr(all_domain)
-
 }
 
 func is_alive(s string) bool {
