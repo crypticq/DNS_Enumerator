@@ -22,3 +22,6 @@ Usage: ./dns <domain> <wordlist> <threading num>
 ```bash
 docker build -t dns . 
 docker run dns hackerone.com subdomains-top1million-5000.txt 40
+```
+
+![Screenshot](screenshot.png)
