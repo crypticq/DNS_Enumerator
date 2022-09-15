@@ -112,13 +112,13 @@ func send_request(url string) []byte {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		return []byte("Error")
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return []byte("Error")
 	}
 	return body
 }
@@ -299,7 +299,7 @@ func crt(host string) string {
 
 func passive_dns(taregt string) []string {
 	hackertarget(os.Args[1])
-	// threatcrowd(os.Args[1])
+	threatcrowd(os.Args[1])
 	anubis(os.Args[1])
 	sonar(os.Args[1])
 	alienvault(os.Args[1])
@@ -377,5 +377,5 @@ func main() {
 	banner()
 	run()
 	elapsed := time.Since(start)
-	fmt.Printf(color.BlueString("Elapsed time: %s"+" "+"", elapsed))
+	fmt.Printf(color.BlackString("Elapsed time: %s"+" "+"", elapsed))
 }
