@@ -23,5 +23,3 @@ Usage: ./dns <domain> <wordlist> <threading num>
 docker build -t dns . 
 docker run dns hackerone.com subdomains-top1million-5000.txt 40
 ```
-
-![Screenshot](screenshot.png)
