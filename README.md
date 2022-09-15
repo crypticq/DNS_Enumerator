@@ -24,4 +24,4 @@ docker build -t dns .
 docker run dns hackerone.com subdomains-top1million-5000.txt 40
 ```
 
-![img](https://i.imgur.com/EAfFfuN.png)
+![img](https://i.imgur.com/RpmnSJb.png)
