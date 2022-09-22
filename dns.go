@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/enescakir/emoji"
 	"github.com/fatih/color"
 	"github.com/xxjwxc/gowp/workpool"
 )
